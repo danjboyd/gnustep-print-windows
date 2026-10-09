@@ -1,5 +1,20 @@
 2026-10-09  Daniel Boyd  <danieljboyd@icloud.com>
 
+	* patches/libs-back/0001-back-cairo-give-cairo-a-UTF-8-filename-for-PS-and-PD.patch:
+	New file: gnustep-back 57a446c, from master.
+	* patches/libs-gui/0001-NSImage-draw-the-image-s-own-representation-when-not.patch:
+	New patch.
+	* backports/0.32.0/libs-gui/0001-NSImage-draw-the-image-s-own-representation-when-not.patch:
+	New file: the same for gnustep-gui 0.32.0.
+	* Scripts/apply-patches.sh, Scripts/build-gnustep-back.sh,
+	Scripts/build-gnustep-gui.sh, Scripts/make-test-runtime.sh,
+	Scripts/run-in-test-runtime.sh: New scripts.
+	* Tests/Reproducers/PDFSavePath/main.m (main): Use US Letter when the
+	shared print info has no paper size.
+	* docs/PLAN.md: Problems 3 to 5.
+
+2026-10-09  Daniel Boyd  <danieljboyd@icloud.com>
+
 	* Tests/Reproducers/PDFSavePath/GNUmakefile,
 	Tests/Reproducers/PDFSavePath/main.m: New reproducer.  Saves text,
 	and optionally an image, to a PDF with an NSPrintOperation save job

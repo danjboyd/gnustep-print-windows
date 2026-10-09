@@ -1,0 +1,4 @@
+# GNUstep sources, ChangeLogs and patches use LF line endings on every
+# platform; patches must stay byte for byte as made.
+* text=auto eol=lf
+*.patch -text

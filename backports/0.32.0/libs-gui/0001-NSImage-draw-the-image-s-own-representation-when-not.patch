@@ -1,0 +1,190 @@
+From e3bc2771f6f11b6c98bb0d34491d645738072266 Mon Sep 17 00:00:00 2001
+From: Daniel Boyd <danieljboyd@icloud.com>
+Date: Fri, 9 Oct 2026 12:29:55 -0500
+Subject: [PATCH] (backport to gnustep-gui 0.32.0) NSImage: draw the image's own representation when not drawing
+ to the screen
+
+The image cache is a screen resolution copy held by a window.  Printing,
+or making a PDF or PostScript file, drew from it: the output had the
+screen's resolution rather than the image's, and with cairo on Windows a
+PDF surface read the window's pixels only when it emitted the page, after
+they were gone, so cairo stopped on an assertion
+(_cairo_surface_acquire_source_image: !surface->finished).
+---
+
+diff --git a/Source/NSImage.m b/Source/NSImage.m
+--- a/Source/NSImage.m
++++ b/Source/NSImage.m
+@@ -1169,8 +1169,15 @@
+   /** 
+    * We only use caching on backends that can efficiently draw a rect from the cache
+    * onto the current graphics context respecting the CTM, which is currently cairo.
++   *
++   * The cache is a screen resolution copy held by a window, so it is only
++   * used when drawing to the screen.  A context that prints, or makes a PDF
++   * or PostScript file, gets the image's own representation: a lower
++   * resolution copy prints badly, and a vector surface may read the
++   * window's pixels only when it emits the page, after they are gone.
+    */
+   if (_cacheMode != NSImageCacheNever &&
++      [ctxt isDrawingToScreen] &&
+       [ctxt supportsDrawGState])
+     {
+       NSCachedImageRep *cache = [self _doImageCache: rep];
+diff --git a/Tests/gui/NSImage/printingDoesNotCache.m b/Tests/gui/NSImage/printingDoesNotCache.m
+new file mode 100644
+index 000000000..b35c098bd
+--- /dev/null
++++ b/Tests/gui/NSImage/printingDoesNotCache.m
+@@ -0,0 +1,148 @@
++/* Printing an NSImage draws its own representation, not the screen cache.
++   The cache is a window holding a screen resolution copy of the image; a
++   PDF or PostScript surface may read the window's pixels only when it emits
++   the page, by which time they can be gone (on Windows cairo then stops on
++   an assertion), and the copy has the screen's resolution, not the image's.
++   A view that draws a bitmap image is printed to a PDF file; afterwards the
++   image must have no cached representation.  Printing needs the backend,
++   so the set is skipped when the backend is unavailable.
++*/
++#include "Testing.h"
++
++#include <Foundation/NSAutoreleasePool.h>
++#include <Foundation/NSFileManager.h>
++#include <Foundation/NSGeometry.h>
++#include <Foundation/NSPathUtilities.h>
++#include <Foundation/NSProcessInfo.h>
++
++#include <AppKit/NSApplication.h>
++#include <AppKit/NSBitmapImageRep.h>
++#include <AppKit/NSCachedImageRep.h>
++#include <AppKit/NSImage.h>
++#include <AppKit/NSPrintInfo.h>
++#include <AppKit/NSPrintOperation.h>
++#include <AppKit/NSView.h>
++
++@interface ImageView : NSView
++{
++@public
++  NSImage *image;
++}
++@end
++
++@implementation ImageView
++- (void) drawRect: (NSRect)rect
++{
++  [image drawInRect: NSMakeRect(10, 10, 32, 32)
++           fromRect: NSZeroRect
++          operation: NSCompositeSourceOver
++           fraction: 1.0];
++}
++@end
++
++/* A 32 x 32 opaque red bitmap image. */
++static NSImage *
++redImage(void)
++{
++  NSBitmapImageRep *rep;
++  NSImage *img;
++  unsigned char *p;
++  int i;
++
++  rep = AUTORELEASE([[NSBitmapImageRep alloc]
++    initWithBitmapDataPlanes: NULL
++                  pixelsWide: 32
++                  pixelsHigh: 32
++               bitsPerSample: 8
++             samplesPerPixel: 4
++                    hasAlpha: YES
++                    isPlanar: NO
++              colorSpaceName: NSDeviceRGBColorSpace
++                 bytesPerRow: 0
++                bitsPerPixel: 0]);
++  p = [rep bitmapData];
++  for (i = 0; i < 32 * 32; i++)
++    {
++      *p++ = 255;
++      *p++ = 0;
++      *p++ = 0;
++      *p++ = 255;
++    }
++  img = AUTORELEASE([[NSImage alloc] initWithSize: NSMakeSize(32, 32)]);
++  [img addRepresentation: rep];
++  return img;
++}
++
++int
++main(int argc, char **argv)
++{
++  START_SET("NSImage printingDoesNotCache")
++
++  NS_DURING
++    {
++      [NSApplication sharedApplication];
++    }
++  NS_HANDLER
++    {
++      if ([[localException name] isEqualToString: NSInternalInconsistencyException])
++        SKIP("It looks like GNUstep backend is not yet installed")
++    }
++  NS_ENDHANDLER
++
++  NS_DURING
++    {
++      ImageView *view;
++      NSPrintInfo *info;
++      NSPrintOperation *op;
++      NSString *path;
++      NSEnumerator *e;
++      NSImageRep *r;
++      BOOL cached = NO;
++
++      view = AUTORELEASE([[ImageView alloc]
++        initWithFrame: NSMakeRect(0, 0, 100, 100)]);
++      view->image = redImage();
++
++      path = [NSTemporaryDirectory() stringByAppendingPathComponent:
++        [NSString stringWithFormat: @"printingDoesNotCache-%@.pdf",
++          [[NSProcessInfo processInfo] globallyUniqueString]]];
++
++      info = AUTORELEASE([[NSPrintInfo sharedPrintInfo] copy]);
++      [info setPaperSize: NSMakeSize(612, 792)];
++      [info setJobDisposition: NSPrintSaveJob];
++      [[info dictionary] setObject: path forKey: NSPrintSavePath];
++
++      op = [NSPrintOperation printOperationWithView: view printInfo: info];
++      [op setShowsPrintPanel: NO];
++      [op setShowsProgressPanel: NO];
++
++      PASS([op runOperation], "printing the view to a PDF file succeeds");
++      PASS([[NSFileManager defaultManager] fileExistsAtPath: path],
++        "the PDF file is written");
++
++      e = [[view->image representations] objectEnumerator];
++      while ((r = [e nextObject]) != nil)
++        {
++          if ([r isKindOfClass: [NSCachedImageRep class]])
++            {
++              cached = YES;
++            }
++        }
++      PASS(cached == NO, "printing does not cache the image for the screen");
++
++      [[NSFileManager defaultManager] removeFileAtPath: path handler: nil];
++    }
++  NS_HANDLER
++    {
++      if ([[localException name] isEqualToString: NSInternalInconsistencyException]
++        || [[localException name] isEqualToString: @"NSWindowServerCommunicationException"])
++        SKIP("No display available")
++      else
++        [localException raise];
++    }
++  NS_ENDHANDLER
++
++  END_SET("NSImage printingDoesNotCache")
++
++  return 0;
++}
+-- 
+2.47.1.windows.1
+

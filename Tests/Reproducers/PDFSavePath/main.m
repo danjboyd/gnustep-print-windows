@@ -78,6 +78,15 @@ main(int argc, const char *argv[])
     }
 
   info = AUTORELEASE([[NSPrintInfo sharedPrintInfo] copy]);
+  /* On Windows the shared print info has no paper size (0 x 0), and
+   * nothing is drawn on such a page; use US Letter then.
+   */
+  if ([info paperSize].width <= 0 || [info paperSize].height <= 0)
+    {
+      fprintf(stderr, "default paper size is %g x %g; using Letter\n",
+        [info paperSize].width, [info paperSize].height);
+      [info setPaperSize: NSMakeSize(612, 792)];
+    }
   [info setJobDisposition: NSPrintSaveJob];
   [[info dictionary] setObject: path forKey: NSPrintSavePath];
 

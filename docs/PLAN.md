@@ -24,16 +24,39 @@ Built against MSYS2 CLANG64 GNUstep with the cairo backend (gnustep-back
    July 2026), after 0.32.0; MSYS2 ships 0.32.0. To do: carry that commit
    in the Windows packages' GNUstep build. Reproducer:
    `Tests/Reproducers/PDFSavePath`.
-3. **cairo asserts on a real document.** Exporting MarkdownViewer's
-   README.md to PDF stops in `_cairo_surface_acquire_source_image` (CRT
-   assert dialog). A one-word document works. Probably an image whose
-   source surface the PDF surface can't read. Not narrowed down yet: a
-   text view with an image attachment (PNG) saves without the assert.
+3. **cairo asserts on a document with images.** Saving a PDF stops on
+   `Assertion failed: !surface->finished` (cairo-surface.c), reached from
+   `_cairo_surface_acquire_source_image` when the page is emitted.
+   Cause: gnustep-gui's `-[NSImage drawInRect:fromRect:...]` draws from
+   its screen cache (a window holding a screen resolution copy) whenever
+   the context `-supportsDrawGState`, printing included. The PDF surface
+   records the window's surface and reads it at `cairo_show_page`, when
+   cairo's snapshot of the Windows DDB surface is already finished. The
+   cache also prints images at screen resolution on every platform.
+   **Fixed** by `patches/libs-gui/0001-NSImage-draw-the-image-s-own-
+   representation-when-not.patch`: use the cache only when
+   `-isDrawingToScreen`. Test: `Tests/gui/NSImage/printingDoesNotCache.m`
+   in the patch (it aborts on stock 0.32.0 on Windows and passes with the
+   patch). The 0.32.0 backport is in `backports/0.32.0/libs-gui`.
+4. **The default paper size is 0 x 0 on Windows.** `[NSPrintInfo
+   sharedPrintInfo]` has no paper size, and a print operation then makes
+   one blank page. gnustep-gui's GSWIN32 print info doesn't ask Windows
+   for the default printer's paper. The `GSWinPrint` bundle will; until
+   then apps set a size (MarkdownViewer does).
+5. **An image that crosses a page break loses its top part.** In a PDF of
+   a document whose screenshot spans two pages, the second page shows the
+   image's lower part and the first only the background. Not looked at
+   yet; it may be gnustep-gui's text drawing (an attachment drawn only on
+   the page that holds its glyph).
 
 ## Steps
 
-1. Carry gnustep-back 57a446c for problem 2; find and fix problem 3
-   (assert) as a gnustep-back patch, with a reproducer. That alone lets MarkdownViewer's Export as PDF
+1. Done: carry gnustep-back 57a446c for problem 2
+   (`patches/libs-back/0001-...`); problem 3 fixed in gnustep-gui
+   (`patches/libs-gui/0001-...`). Builds for both (step 2) are
+   `Scripts/build-gnustep-back.sh` and `Scripts/build-gnustep-gui.sh`, and
+   `Scripts/make-test-runtime.sh` makes a private runtime to test them in
+   without touching the toolchain. That alone lets MarkdownViewer's Export as PDF
    stop using Edge.
 2. A cairo target for a printer device context in gnustep-back
    (`cairo_win32_printing_surface_create`), chosen by a print context

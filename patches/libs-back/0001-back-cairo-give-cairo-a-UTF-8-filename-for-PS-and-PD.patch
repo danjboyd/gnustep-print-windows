@@ -1,0 +1,44 @@
+From 57a446c6d6c0ed0d4a780d3a09cc572da118bd8a Mon Sep 17 00:00:00 2001
+From: DTW-Thalion <todd.white@thalion.global>
+Date: Tue, 14 Jul 2026 16:04:23 -0400
+Subject: [PATCH] back/cairo: give cairo a UTF-8 filename for PS and PDF output
+ (#140)
+
+cairo_ps_surface_create and cairo_pdf_surface_create take a UTF-8 char* file
+name, but -fileSystemRepresentation returns a UTF-16 unichar* on Windows, so the
+PS and PDF surfaces did not compile there.  Use -UTF8String, which is a UTF-8
+char* on every platform.
+---
+ Source/cairo/CairoPDFSurface.m | 2 +-
+ Source/cairo/CairoPSSurface.m  | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Source/cairo/CairoPDFSurface.m b/Source/cairo/CairoPDFSurface.m
+index 6c543a1..cf2b99a 100644
+--- a/Source/cairo/CairoPDFSurface.m
++++ b/Source/cairo/CairoPDFSurface.m
+@@ -37,7 +37,7 @@
+ 
+   // FIXME: Hard coded size in points
+   size = NSMakeSize(400, 400);
+-  _surface = cairo_pdf_surface_create([path fileSystemRepresentation], 
++  _surface = cairo_pdf_surface_create([path UTF8String],
+                                       size.width, size.height);
+   if (cairo_surface_status(_surface))
+     {
+diff --git a/Source/cairo/CairoPSSurface.m b/Source/cairo/CairoPSSurface.m
+index 141e8f6..751f5ad 100644
+--- a/Source/cairo/CairoPSSurface.m
++++ b/Source/cairo/CairoPSSurface.m
+@@ -37,7 +37,7 @@
+ 
+   // FIXME: Hard coded size in points
+   size = NSMakeSize(400, 400);
+-  _surface = cairo_ps_surface_create([path fileSystemRepresentation], size.width, size.height);
++  _surface = cairo_ps_surface_create([path UTF8String], size.width, size.height);
+   if (cairo_surface_status(_surface))
+     {
+       DESTROY(self);
+-- 
+2.47.1.windows.1
+
