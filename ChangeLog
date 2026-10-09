@@ -1,5 +1,13 @@
 2026-10-09  Daniel Boyd  <danieljboyd@icloud.com>
 
+	* patches/libs-back/0002-cairo-print-on-a-Windows-printer-device-context.patch:
+	New patch: CairoWin32PrintingSurface, a cairo surface on a Windows
+	printer device context, chosen by the context format
+	GSWin32PrinterFormat; CairoContext tells its surface when a printed
+	page begins and has been shown.
+
+2026-10-09  Daniel Boyd  <danieljboyd@icloud.com>
+
 	* patches/libs-back/0001-back-cairo-give-cairo-a-UTF-8-filename-for-PS-and-PD.patch:
 	New file: gnustep-back 57a446c, from master.
 	* patches/libs-gui/0001-NSImage-draw-the-image-s-own-representation-when-not.patch:
