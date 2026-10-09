@@ -1,0 +1,8 @@
+2026-10-09  Daniel Boyd  <danieljboyd@icloud.com>
+
+	* Tests/Reproducers/PDFSavePath/GNUmakefile,
+	Tests/Reproducers/PDFSavePath/main.m: New reproducer.  Saves text,
+	and optionally an image, to a PDF with an NSPrintOperation save job
+	and reports where the file was written.
+	* AGENTS.md: New file.
+	* README.md, docs/PLAN.md, COPYING.LIB: New files.

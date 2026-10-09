@@ -15,19 +15,25 @@ Built against MSYS2 CLANG64 GNUstep with the cairo backend (gnustep-back
    it with `WritePrinter` and datatype `RAW`. Only PostScript printers
    can read that. Not yet confirmed with a real job.
 2. **A PDF save job writes to the wrong file.** `NSPrintSaveJob` with
-   `NSPrintSavePath` `C:/.../out.pdf` produced a correct PDF named `C` in
-   the working directory. gnustep-back's `CairoPDFSurface` passes
-   `NSOutputFile` straight to `cairo_pdf_surface_create`, so the path is
-   cut somewhere else. Cause not found yet.
+   `NSPrintSavePath` `C:/.../out.pdf` writes a correct PDF named `C` in
+   the working directory (`out.pdf` gives a file named `o`). gnustep-back
+   0.32.0's `CairoPDFSurface` and `CairoPSSurface` pass
+   `-fileSystemRepresentation` to cairo, which on Windows is UTF-16, so
+   cairo reads one character. **Already fixed upstream** by gnustep-back
+   57a446c ("give cairo a UTF-8 filename for PS and PDF output", #140,
+   July 2026), after 0.32.0; MSYS2 ships 0.32.0. To do: carry that commit
+   in the Windows packages' GNUstep build. Reproducer:
+   `Tests/Reproducers/PDFSavePath`.
 3. **cairo asserts on a real document.** Exporting MarkdownViewer's
    README.md to PDF stops in `_cairo_surface_acquire_source_image` (CRT
    assert dialog). A one-word document works. Probably an image whose
-   source surface the PDF surface can't read. Not narrowed down yet.
+   source surface the PDF surface can't read. Not narrowed down yet: a
+   text view with an image attachment (PNG) saves without the assert.
 
 ## Steps
 
-1. Fix problem 2 (path) and problem 3 (assert) as gnustep-back patches,
-   with a reproducer each. That alone lets MarkdownViewer's Export as PDF
+1. Carry gnustep-back 57a446c for problem 2; find and fix problem 3
+   (assert) as a gnustep-back patch, with a reproducer. That alone lets MarkdownViewer's Export as PDF
    stop using Edge.
 2. A cairo target for a printer device context in gnustep-back
    (`cairo_win32_printing_surface_create`), chosen by a print context
