@@ -1,0 +1,10 @@
+# GNUstep make outputs
+obj/
+*.bundle/
+*.app/
+derived_src/
+
+# Local IDE and OS state
+.vs/
+.DS_Store
+Thumbs.db
