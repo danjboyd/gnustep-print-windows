@@ -29,7 +29,9 @@
 #    make-test-runtime.sh [--backend <bundle>] [--gui <dll>] [--runtime <dir>]
 #
 #  The gnustep-gui DLL that Scripts/build-gnustep-gui.sh built replaces the
-#  toolchain's when there is one (or the one --gui names).
+#  toolchain's when there is one (or the one --gui names).  The GSWinPrint
+#  bundle, when it has been built (make -C Source/GSWinPrint), goes into
+#  lib/GNUstep/Bundles/GSPrinting; select it with -GSPrinting GSWinPrint.
 #
 
 set -euo pipefail
@@ -38,6 +40,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUNTIME="$ROOT/build/runtime"
 BACKEND="$ROOT/build/gnustep-back/out/libgnustep-back-032.bundle"
 GUI_DLL="$ROOT/build/gnustep-gui/out/gnustep-gui-0.dll"
+PRINT_BUNDLE="$ROOT/Source/GSWinPrint/GSWinPrint.bundle"
 
 while [[ $# -gt 0 ]]
 do
@@ -78,4 +81,9 @@ fi
 cp -R "$PREFIX/lib/GNUstep" "$RUNTIME/lib/"
 rm -rf "$RUNTIME/lib/GNUstep/Bundles/$(basename "$BACKEND")"
 cp -R "$BACKEND" "$RUNTIME/lib/GNUstep/Bundles/"
+if [[ -d "$PRINT_BUNDLE" ]]
+then
+  cp -R "$PRINT_BUNDLE" "$RUNTIME/lib/GNUstep/Bundles/GSPrinting/"
+  echo "printing bundle: $PRINT_BUNDLE"
+fi
 echo "runtime in $RUNTIME (backend: $BACKEND)"

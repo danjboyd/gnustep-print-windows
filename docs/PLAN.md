@@ -49,6 +49,27 @@ Built against MSYS2 CLANG64 GNUstep with the cairo backend (gnustep-back
    yet; it may be gnustep-gui's text drawing (an attachment drawn only on
    the page that holds its glyph).
 
+## Status (2026-10-09, evening)
+
+- `Source/GSWinPrint` builds (clang, -Wall, no warnings) and prints: with
+  `-GSPrinting GSWinPrint` and the patched gnustep-back,
+  `Tests/PrintToFile` prints three Letter pages on `Microsoft Print to
+  PDF` (a non-PostScript driver) into a PDF through the spooler, with the
+  frame, text and colour where GNUstep's own PDF output puts them.
+- Text reaches the driver as vector glyph outlines (cairo's Windows
+  printing surface with FreeType fonts): sharp at any resolution, a small
+  spool (44 KB for three pages); no fonts in the driver's output, so a
+  "Print to PDF" file has no selectable text. Export as PDF keeps going
+  through cairo's PDF surface, which embeds the fonts.
+- Seen once, not reproduced in eight later runs: the first print came out
+  72 points lower on the page. Watch for it.
+- The bundle fills NSPrinter's tables from the driver (papers and their
+  sizes, printable area, default paper, colour, resolution), which fixes
+  problem 4 under GSWinPrint, and its default printer is Windows' default.
+- Not yet: a real printer (the LaserJet on the dev VM, with the Microsoft
+  IPP Class Driver) needs paper and Dan's go-ahead; landscape, copies,
+  collation and page ranges; the theme's print panel end to end.
+
 ## Steps
 
 1. Done: carry gnustep-back 57a446c for problem 2

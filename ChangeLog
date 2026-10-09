@@ -1,5 +1,21 @@
 2026-10-09  Daniel Boyd  <danieljboyd@icloud.com>
 
+	* Source/GSWinPrint/GNUmakefile,
+	Source/GSWinPrint/GSWinPrintPrincipalClass.h,
+	Source/GSWinPrint/GSWinPrintPrincipalClass.m,
+	Source/GSWinPrint/GSWinPrintInfo.h, Source/GSWinPrint/GSWinPrintInfo.m,
+	Source/GSWinPrint/GSWinPrintOperation.h,
+	Source/GSWinPrint/GSWinPrintOperation.m,
+	Source/GSWinPrint/GSWinPrinter.h, Source/GSWinPrint/GSWinPrinter.m,
+	Source/GSWinPrint/GSWinPrintSupport.h,
+	Source/GSWinPrint/GSWinPrintSupport.m: New printing bundle.
+	* Tests/PrintToFile/GNUmakefile, Tests/PrintToFile/main.m: New test.
+	* Scripts/make-test-runtime.sh: Install the GSWinPrint bundle in the
+	runtime when it has been built.
+	* docs/PLAN.md: Status.
+
+2026-10-09  Daniel Boyd  <danieljboyd@icloud.com>
+
 	* patches/libs-back/0002-cairo-print-on-a-Windows-printer-device-context.patch:
 	New patch: CairoWin32PrintingSurface, a cairo surface on a Windows
 	printer device context, chosen by the context format

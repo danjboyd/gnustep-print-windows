@@ -9,3 +9,6 @@ derived_src/
 .DS_Store
 Thumbs.db
 build/
+Source/GSWinPrint/obj/
+Source/GSWinPrint/GSWinPrint.bundle/
+Tests/*/obj/
