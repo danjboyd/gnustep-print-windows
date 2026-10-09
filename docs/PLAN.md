@@ -43,9 +43,32 @@ Built against MSYS2 CLANG64 GNUstep with the cairo backend (gnustep-back
 
 ## Interface with WinUITheme
 
-To agree with the theme (plugins-themes-winuitheme #69): which
-`NSPrintInfo` keys carry the printer, copies, page range, collation and
-the `DEVMODE` from `PrintDlgW`, so this bundle prints what the user chose.
+Agreed with the theme session on 2026-10-09. WinUITheme's print panel
+(#69, branch native-dialogs, not yet released) runs `PrintDlgW` and
+writes the user's choices into the `NSPrintInfo`; this bundle reads them:
+
+| What | Key | Written by the theme |
+|---|---|---|
+| Printer | `-[NSPrintInfo printer]`, named as Windows names it (DEVNAMES device) | Yes, when GNUstep knows the printer |
+| Copies | `NSPrintCopies` | Yes |
+| Page range | `NSPrintAllPages`, `NSPrintFirstPage`, `NSPrintLastPage` (1-based) | Yes |
+| Collate | `NSPrintMustCollate` | Yes |
+| Paper, orientation | `-setPaperName:`, `-setPaperSize:`, `-setOrientation:` | Yes (Letter, Legal, Executive, Tabloid, A3, A4, A5, B5) |
+| Driver settings (tray, duplex, colour, ...) | The `DEVMODEW` bytes as `NSData` | Not yet: the key's name is Dan's call |
+| Print to file | - | No: the theme hides it (`PD_HIDEPRINTTOFILE`) |
+
+Until the DEVMODE is passed on, the bundle builds one from the printer's
+default (`DocumentPropertiesW`) and applies copies, collation, paper and
+orientation from the keys above.
+
+Page setup belongs to the theme: it runs `PageSetupDlgW` from
+`-[NSApplication runPageLayout:]` and NSDocument's
+`-runModalPageLayoutWithPrintInfo:...`, writing the same keys plus
+margins. (`+[NSPageLayout pageLayout]` itself fails on Windows with gui
+0.32: "Could not load page layout panel resource".)
+
+Windows 11 shows its modern print dialog for `PrintDlgW`; it takes the
+same input and returns the same values.
 
 ## Open questions
 
@@ -53,5 +76,4 @@ the `DEVMODE` from `PrintDlgW`, so this bundle prints what the user chose.
   Windows printing surface may print such text as fallback images (300
   dpi by default) rather than as fonts. Acceptable on paper; check the
   spool size.
-- Whether the theme or this bundle should own the page setup dialog
-  (`PageSetupDlgW`).
+- The DEVMODE key's name: this bundle's own or a GNUstep-wide one.
